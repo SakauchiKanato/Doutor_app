@@ -28,6 +28,14 @@ try {
         echo "<p>ℹ️ 制約は既に存在します。</p>";
     }
 
+    $col_exists = $pdo->query("SELECT 1 FROM information_schema.columns WHERE table_name = 'forecasts' AND column_name = 'remaining_stock'")->fetch();
+    if (!$col_exists) {
+        $pdo->exec('ALTER TABLE forecasts ADD COLUMN remaining_stock INTEGER');
+        echo "<p>✅ remaining_stock カラムを forecasts テーブルに追加しました。</p>";
+    } else {
+        echo "<p>ℹ️ remaining_stock カラムは既に存在します。</p>";
+    }
+
     // 2. daily_stars テーブルの修復
     echo "<h3>2. daily_stars テーブル</h3>";
     $count = $pdo->exec('

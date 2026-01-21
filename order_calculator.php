@@ -39,7 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
             
             // 在庫記録（今日）
             if ($current_stock !== null) {
-                $stmt = $pdo->prepare('INSERT INTO inventory_logs (item_id, log_date, quantity) VALUES (?, ?, ?)');
+                $stmt = $pdo->prepare('
+                    INSERT INTO inventory_logs (item_id, log_date, quantity) VALUES (?, ?, ?)
+                    ON CONFLICT (item_id, log_date) DO UPDATE SET quantity = EXCLUDED.quantity
+                ');
                 $stmt->execute([$item_id, $today, $current_stock]);
             }
             
