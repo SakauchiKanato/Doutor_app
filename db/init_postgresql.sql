@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS forecasts (
     star_level INTEGER NOT NULL,
     predicted_consumption INTEGER NOT NULL,
     actual_consumption INTEGER,
+    remaining_stock INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
     UNIQUE(item_id, target_date)

@@ -66,7 +66,7 @@ include 'includes/header.php';
                         <th>星ランク</th>
                         <th>サンプル数</th>
                         <th>現在の設定</th>
-                        <th style="background: #fdf2e9;">実績平均</th>
+                        <th style="background: #fdf2e9; color: #6B4423;" >実績平均</th>
                         <th>ズレ</th>
                         <th>反映</th>
                     </tr>
