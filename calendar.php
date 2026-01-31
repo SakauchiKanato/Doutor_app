@@ -14,9 +14,15 @@ if (isset($_GET['delete'])) {
     exit;
 }
 
-// 今月のイベントを取得
+// 今月のイベントを取得（ジャンル情報も含む）
 $current_month = date('Y-m');
-$stmt = $pdo->prepare('SELECT * FROM events WHERE event_date >= ? ORDER BY event_date ASC');
+$stmt = $pdo->prepare('
+    SELECT e.*, eg.genre_name 
+    FROM events e 
+    LEFT JOIN event_genres eg ON e.genre_id = eg.id 
+    WHERE e.event_date >= ? 
+    ORDER BY e.event_date ASC
+');
 $stmt->execute([date('Y-m-d')]);
 $events = $stmt->fetchAll();
 
@@ -61,6 +67,8 @@ include 'includes/header.php';
                 <th>日付</th>
                 <th>イベント名</th>
                 <th>会場</th>
+                <th>ジャンル</th>
+                <th>来場予想数</th>
                 <th>推奨星ランク</th>
                 <th>メモ</th>
                 <th>操作</th>
@@ -76,6 +84,24 @@ include 'includes/header.php';
                         <span style="padding: 0.25rem 0.5rem; background: var(--doutor-cream); border-radius: 3px; font-size: 0.9rem;">
                             <?php echo h($event['venue']); ?>
                         </span>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?php if ($event['genre_name']): ?>
+                        <span style="padding: 0.25rem 0.5rem; background: #e3f2fd; color: #1976d2; border-radius: 3px; font-size: 0.9rem;">
+                            🏷️ <?php echo h($event['genre_name']); ?>
+                        </span>
+                    <?php else: ?>
+                        <span style="color: #999; font-size: 0.9rem;">未設定</span>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?php if ($event['expected_visitors']): ?>
+                        <span style="font-weight: bold; color: var(--doutor-brown);">
+                            <?php echo number_format($event['expected_visitors']); ?> 人
+                        </span>
+                    <?php else: ?>
+                        <span style="color: #999; font-size: 0.9rem;">-</span>
                     <?php endif; ?>
                 </td>
                 <td style="font-size: 1.2rem;"><?php echo displayStars($event['recommended_star']); ?></td>
