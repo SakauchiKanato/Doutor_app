@@ -132,8 +132,9 @@ include 'includes/header.php';
 ?>
 
 <div class="card">
-    <div class="card-header">
+    <div class="card-header flex-between">
         <h2>📝 精密発注計算</h2>
+        <a href="items.php" class="btn btn-secondary">📦 商品管理</a>
     </div>
 
     <?php echo $message; ?>

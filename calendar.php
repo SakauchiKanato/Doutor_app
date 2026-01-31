@@ -47,6 +47,7 @@ include 'includes/header.php';
         <div class="flex gap-1" style="flex-wrap: wrap;">
             <a href="sync_events.php" class="btn btn-secondary" onclick="return confirm('幕張メッセのサイトから今月のイベントを取得しますか？');">🔄 メッセ同期</a>
             <a href="event_edit.php" class="btn btn-primary">➕ イベント追加</a>
+            <a href="genre_manage.php" class="btn btn-secondary">🏷️ ジャンル管理</a>
         </div>
     </div>
     
