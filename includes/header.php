@@ -17,9 +17,7 @@
                 <a href="order_history.php">📦 発注履歴</a>
                 <a href="feedback.php">✅ 実績入力</a>
                 <a href="analytics.php">📊 精度分析</a>
-                <a href="items.php">📦 商品管理</a>
                 <a href="calendar.php">📅 イベント</a>
-                <a href="genre_manage.php">🏷️ ジャンル管理</a>
                 <a href="genre_analytics.php">📈 ジャンル分析</a>
                 <a href="logout.php" class="logout-btn">ログアウト</a>
             </nav>
