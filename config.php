@@ -85,3 +85,30 @@ function displayStars($level) {
     }
     return $stars;
 }
+
+// ========================================
+// API設定
+// ========================================
+
+/**
+ * Gemini API キー設定
+ * 
+ * 設定方法（優先順位）:
+ * 1. 以下の GEMINI_API_KEY_CONFIG に直接記述（推奨）
+ * 2. 環境変数 GEMINI_API_KEY を設定
+ * 
+ * APIキーの取得方法:
+ * https://aistudio.google.com/app/apikey （無料）
+ */
+
+// ここにAPIキーを直接記述できます（記述した場合、環境変数より優先されます）
+define('GEMINI_API_KEY_CONFIG', 'AIzaSyCKI7nAksI_p27DI0s6Eg2NglNkYOw8Abc');  // 例: 'AIzaSyC...'
+
+// 実際に使用するAPIキー（config設定 > 環境変数の優先順位）
+if (!defined('GEMINI_API_KEY')) {
+    if (!empty(GEMINI_API_KEY_CONFIG)) {
+        define('GEMINI_API_KEY', GEMINI_API_KEY_CONFIG);
+    } else {
+        define('GEMINI_API_KEY', getenv('GEMINI_API_KEY') ?: '');
+    }
+}

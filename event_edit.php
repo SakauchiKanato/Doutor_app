@@ -2,6 +2,9 @@
 require_once 'auth.php';
 require_once 'config.php';
 
+// 管理者権限チェック
+requireAdmin();
+
 $page_title = 'イベント編集';
 $pdo = getDB();
 
