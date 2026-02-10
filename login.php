@@ -12,7 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo = getDB();
         
         // 既存のusersテーブルはpassword_hashカラムとuser_idカラムを使用
-        $stmt = $pdo->prepare('SELECT user_id, password_hash FROM users WHERE username = ?');
+        // roleカラムも取得
+        $stmt = $pdo->prepare('SELECT user_id, password_hash, role FROM users WHERE username = ?');
         $stmt->execute([$username]);
         $user = $stmt->fetch();
         
@@ -21,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             session_regenerate_id(true);
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['username'] = $username;
+            $_SESSION['role'] = $user['role'] ?? 'user'; // ロール情報も保存
             header('Location: index.php');
             exit;
         } else {
@@ -64,9 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
             
             <div class="mt-3 text-center" style="font-size: 0.9rem; color: #7F8C8D;">
-                <p>デフォルトログイン情報:</p>
+                <p>管理者ログイン情報:</p>
                 <p>ユーザー名: <strong>admin</strong></p>
                 <p>パスワード: <strong>admin123</strong></p>
+                <p>スタッフログイン情報</p>
+                <p>ユーザー名: <strong>staff</strong></p>
+                <p>パスワード: <strong>staff123</strong></p>
             </div>
         </div>
     </div>
