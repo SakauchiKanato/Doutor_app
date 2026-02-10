@@ -27,6 +27,7 @@
                 <a href="items.php">📦 商品管理</a>
                 <a href="genre_manage.php">🏷️ ジャンル管理</a>
                 <a href="star_criteria_manage.php">⭐ 評価基準</a>
+                <a href="data_import.php">📥 データインポート</a>
                 <a href="ai_analysis.php">🤖 AI分析</a>
                 <?php endif; ?>
                 <a href="logout.php" class="logout-btn">ログアウト</a>
