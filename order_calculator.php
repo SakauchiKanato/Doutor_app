@@ -134,7 +134,13 @@ include 'includes/header.php';
 <div class="card">
     <div class="card-header flex-between">
         <h2>📝 精密発注計算</h2>
-        <a href="items.php" class="btn btn-secondary">📦 商品管理</a>
+        <div class="flex gap-1" style="flex-wrap: wrap;">
+            <?php if (isAdmin()): ?>
+            <a href="items.php" class="btn btn-secondary">📦 商品管理</a>
+            <a href="order_history.php" class="btn btn-secondary">📦 発注履歴</a>
+            <a href="star_criteria_manage.php" class="btn btn-primary">⭐ 評価基準</a>
+            <?php endif; ?>
+        </div>
     </div>
 
     <?php echo $message; ?>

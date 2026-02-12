@@ -48,8 +48,11 @@ include 'includes/header.php';
 ?>
 
 <div class="card">
-    <div class="card-header">
+    <div class="card-header flex-between">
         <h2>📊 実績データ分析と最適化</h2>
+        <div class="flex gap-1" style="flex-wrap: wrap;">
+            <a href="star_criteria_manage.php" class="btn btn-primary">⭐ 評価基準</a>
+        </div>
     </div>
 
     <?php echo $message; ?>

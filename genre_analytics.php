@@ -84,8 +84,11 @@ include 'includes/header.php';
 ?>
 
 <div class="card">
-    <div class="card-header">
+    <div class="card-header flex-between">
         <h2>📊 ジャンル別データ分析</h2>
+        <?php if (isAdmin()): ?>
+        <a href="genre_manage.php" class="btn btn-secondary">🏷️ ジャンル管理</a>
+        <?php endif; ?>
     </div>
     
     <div class="alert alert-warning">

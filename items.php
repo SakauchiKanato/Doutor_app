@@ -10,64 +10,107 @@ $pdo = getDB();
 
 // CSVインポート処理
 $import_message = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && isset($_POST['import'])) {
+$show_import_form = false;
+
+// 1. マッピング確定後のインポート実行
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_mapping']) && isset($_SESSION['csv_import_data'])) {
+    $mapping = $_POST['column_mapping'];
+    $csv_data = $_SESSION['csv_import_data']['data'];
+    $success_count = 0;
+    $error_count = 0;
+    
+    try {
+        $pdo->beginTransaction();
+        
+        foreach ($csv_data as $row) {
+            $name = isset($mapping['name']) && $mapping['name'] !== '' && isset($row[$mapping['name']]) ? trim($row[$mapping['name']]) : '';
+            $unit = isset($mapping['unit']) && $mapping['unit'] !== '' && isset($row[$mapping['unit']]) ? trim($row[$mapping['unit']]) : '個';
+            $safety_stock = isset($mapping['safety_stock']) && $mapping['safety_stock'] !== '' && isset($row[$mapping['safety_stock']]) ? (int)$row[$mapping['safety_stock']] : 10;
+            
+            if ($name !== '') {
+                // 重複チェック
+                $stmt = $pdo->prepare('SELECT id FROM items WHERE name = ?');
+                $stmt->execute([$name]);
+                if (!$stmt->fetch()) {
+                    $stmt = $pdo->prepare('INSERT INTO items (name, unit, safety_stock) VALUES (?, ?, ?)');
+                    $stmt->execute([$name, $unit, $safety_stock]);
+                    $success_count++;
+                } else {
+                    // 既に存在する場合はスキップ
+                }
+            } else {
+                $error_count++;
+            }
+        }
+        
+        $pdo->commit();
+        $import_message = "<div class='alert alert-success'>✅ CSVインポート完了: {$success_count}件の商品を追加しました。</div>";
+        if ($error_count > 0) {
+            $import_message .= "<div class='alert alert-warning'>⚠️ {$error_count}件のエラーがありました（商品名が空の行など）。</div>";
+        }
+        
+        // セッションデータをクリア
+        unset($_SESSION['csv_import_data']);
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        $import_message = "<div class='alert alert-danger'>❌ インポートエラー: " . h($e->getMessage()) . "</div>";
+    }
+}
+// 2. CSVファイルアップロード処理
+elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && isset($_POST['import'])) {
     $file = $_FILES['csv_file'];
     
     if ($file['error'] === UPLOAD_ERR_OK) {
         $csv_data = [];
-        $handle = fopen($file['tmp_name'], 'r');
-        
-        // ヘッダー行を取得
-        $headers = fgetcsv($handle);
-        
-        // データ行を取得
-        while (($row = fgetcsv($handle)) !== false) {
-            $csv_data[] = $row;
+        // 文字コード検出と変換
+        $content = file_get_contents($file['tmp_name']);
+        $encoding = mb_detect_encoding($content, 'UTF-8, SJIS-win, SJIS, EUC-JP, ASCII', true);
+        if ($encoding && $encoding !== 'UTF-8') {
+            $content = mb_convert_encoding($content, 'UTF-8', $encoding);
         }
-        fclose($handle);
         
-        // カラムマッピング処理
-        if (isset($_POST['confirm_mapping'])) {
-            // マッピング確定後のインポート実行
-            $mapping = $_POST['column_mapping'];
-            $success_count = 0;
-            $error_count = 0;
+        // 一時ファイルに保存して読み込み
+        $tmp_file = tempnam(sys_get_temp_dir(), 'csv_');
+        file_put_contents($tmp_file, $content);
+        $handle = fopen($tmp_file, 'r');
+        
+        if ($handle !== false) {
+            // ヘッダー行を取得
+            $headers = fgetcsv($handle);
             
-            try {
-                $pdo->beginTransaction();
-                
-                foreach ($csv_data as $row) {
-                    $name = isset($mapping['name']) && $mapping['name'] !== '' ? $row[$mapping['name']] : '';
-                    $unit = isset($mapping['unit']) && $mapping['unit'] !== '' ? $row[$mapping['unit']] : '個';
-                    $safety_stock = isset($mapping['safety_stock']) && $mapping['safety_stock'] !== '' ? (int)$row[$mapping['safety_stock']] : 10;
-                    
-                    if ($name) {
-                        $stmt = $pdo->prepare('INSERT INTO items (name, unit, safety_stock) VALUES (?, ?, ?)');
-                        $stmt->execute([$name, $unit, $safety_stock]);
-                        $success_count++;
-                    } else {
-                        $error_count++;
+            if ($headers !== false) {
+                // データ行を取得
+                while (($row = fgetcsv($handle)) !== false) {
+                    if (array_filter($row)) {
+                        $csv_data[] = $row;
                     }
                 }
+                fclose($handle);
+                unlink($tmp_file);
                 
-                $pdo->commit();
-                $import_message = "<div class='alert alert-success'>✅ CSVインポート完了: {$success_count}件の商品を追加しました。</div>";
-                if ($error_count > 0) {
-                    $import_message .= "<div class='alert alert-warning'>⚠️ {$error_count}件のエラーがありました（商品名が空の行）。</div>";
-                }
-            } catch (Exception $e) {
-                $pdo->rollBack();
-                $import_message = "<div class='alert alert-danger'>❌ インポートエラー: " . h($e->getMessage()) . "</div>";
+                // カラムマッピング画面を表示するためのフラグ設定
+                $_SESSION['csv_import_data'] = [
+                    'headers' => $headers,
+                    'data' => $csv_data
+                ];
+                
+                // マッピング画面へリダイレクト（念のため）
+                header('Location: items.php');
+                exit;
+                
+            } else {
+                fclose($handle);
+                $import_message = '<div class="alert alert-danger">❌ CSVファイルが空か、フォーマットが不正です。</div>';
+                $show_import_form = true;
             }
         } else {
-            // カラムマッピング画面を表示するためのフラグ
-            $_SESSION['csv_import_data'] = [
-                'headers' => $headers,
-                'data' => $csv_data
-            ];
+            $import_message = '<div class="alert alert-danger">❌ ファイルを開けませんでした。</div>';
+            $show_import_form = true;
         }
     } else {
         $import_message = '<div class="alert alert-danger">❌ ファイルのアップロードに失敗しました。</div>';
+        $show_import_form = true;
     }
 }
 
@@ -77,6 +120,13 @@ if (isset($_GET['delete'])) {
     $stmt = $pdo->prepare('DELETE FROM items WHERE id = ?');
     $stmt->execute([$id]);
     header('Location: items.php?msg=deleted');
+    exit;
+}
+
+// マッピングキャンセル処理
+if (isset($_GET['cancel'])) {
+    unset($_SESSION['csv_import_data']);
+    header('Location: items.php');
     exit;
 }
 
@@ -138,9 +188,7 @@ include 'includes/header.php';
                             <?php endforeach; ?>
                         </select>
                     </td>
-                    <td>
-                        <span id="preview_name" style="color: #999;">カラムを選択してください</span>
-                    </td>
+                    <td><span id="preview_name" style="color: #999;">選択してください</span></td>
                 </tr>
                 <tr>
                     <td><strong>単位</strong></td>
@@ -154,9 +202,7 @@ include 'includes/header.php';
                             <?php endforeach; ?>
                         </select>
                     </td>
-                    <td>
-                        <span id="preview_unit" style="color: #999;">個</span>
-                    </td>
+                    <td><span id="preview_unit" style="color: #999;">個</span></td>
                 </tr>
                 <tr>
                     <td><strong>安全在庫数</strong></td>
@@ -170,9 +216,7 @@ include 'includes/header.php';
                             <?php endforeach; ?>
                         </select>
                     </td>
-                    <td>
-                        <span id="preview_safety_stock" style="color: #999;">10</span>
-                    </td>
+                    <td><span id="preview_safety_stock" style="color: #999;">10</span></td>
                 </tr>
             </tbody>
         </table>
@@ -196,41 +240,34 @@ include 'includes/header.php';
                     preview.textContent = csvData[idx] || '(値なし)';
                     preview.style.color = '#000';
                 } else {
-                    preview.textContent = field === 'name' ? 'カラムを選択してください' : (field === 'unit' ? '個' : '10');
+                    preview.textContent = field === 'name' ? '選択してください' : (field === 'unit' ? '個' : '10');
                     preview.style.color = '#999';
                 }
             });
-            
             // 初期表示
             select.dispatchEvent(new Event('change'));
         });
     </script>
 </div>
-<?php 
-    // マッピング画面表示後、セッションデータをクリア
-    if (isset($_GET['cancel'])) {
-        unset($_SESSION['csv_import_data']);
-        header('Location: items.php');
-        exit;
-    }
-?>
-<?php else: ?>
+
+<?php else: // 通常画面 ?>
 
 <div class="card">
     <div class="card-header flex-between">
         <h2>📦 商品管理</h2>
         <div style="display: flex; gap: 0.5rem;">
             <a href="item_edit.php" class="btn btn-primary">➕ 新規商品追加</a>
-            <button type="button" class="btn btn-secondary" onclick="document.getElementById('csv-import-form').style.display='block'">
+            <button type="button" class="btn btn-secondary" onclick="toggleImportForm()">
                 📄 CSV一括登録
             </button>
         </div>
     </div>
     
     <?php echo $import_message; ?>
+    <?php echo $message; ?>
     
     <!-- CSV一括登録フォーム -->
-    <div id="csv-import-form" style="display: none; background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+    <div id="csv-import-form" style="display: <?php echo $show_import_form ? 'block' : 'none'; ?>; background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
         <h3>📄 CSV一括登録</h3>
         <p>CSVファイルから商品を一括登録できます。</p>
         <form method="POST" action="" enctype="multipart/form-data">
@@ -241,16 +278,27 @@ include 'includes/header.php';
             </div>
             <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                 <button type="submit" class="btn btn-primary">📤 アップロード</button>
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('csv-import-form').style.display='none'">キャンセル</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleImportForm()">キャンセル</button>
             </div>
         </form>
         <div class="alert alert-warning" style="margin-top: 1rem;">
             <strong>💡 CSVフォーマットについて:</strong><br>
             ・1行目はヘッダー行（カラム名）にしてください<br>
-            ・カラム名は自由です（アップロード後にマッピングできます）<br>
+            ・文字コードはUTF-8またはShift-JISに対応しています<br>
             ・最低限「商品名」のカラムが必要です
         </div>
     </div>
+    
+    <script>
+    function toggleImportForm() {
+        const form = document.getElementById('csv-import-form');
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+        } else {
+            form.style.display = 'none';
+        }
+    }
+    </script>
     
     <?php if (count($items) > 0): ?>
     <table class="table">
@@ -313,6 +361,6 @@ include 'includes/header.php';
     </ul>
 </div>
 
-<?php endif; // CSVマッピング画面との分岐終了 ?>
+<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
