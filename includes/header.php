@@ -16,6 +16,7 @@
                 <a href="order_calculator.php">📝 発注計算</a>
                 <?php if (isAdmin()): ?>
                 <a href="order_history.php">📦 発注履歴</a>
+                <a href="data_management.php">📦 データ管理</a>
                 <?php endif; ?>
                 <a href="feedback.php">✅ 実績入力</a>
                 <?php if (isAdmin()): ?>
@@ -29,6 +30,7 @@
                 <a href="star_criteria_manage.php">⭐ 評価基準</a>
                 <a href="data_import.php">📥 データインポート</a>
                 <a href="ai_analysis.php">🤖 AI分析</a>
+                <a href="ai_history.php">📜 AI履歴</a>
                 <?php endif; ?>
                 <a href="logout.php" class="logout-btn">ログアウト</a>
             </nav>

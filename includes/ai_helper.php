@@ -64,9 +64,20 @@ function callGeminiAPI($prompt) {
     $result = json_decode($response, true);
     
     if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
+        $responseText = $result['candidates'][0]['content']['parts'][0]['text'];
+        
+        // ログを保存
+        try {
+            $pdo = getDB();
+            $stmt = $pdo->prepare("INSERT INTO ai_chat_logs (prompt, response) VALUES (?, ?)");
+            $stmt->execute([$prompt, $responseText]);
+        } catch (Exception $e) {
+            // ログ保存エラーは無視して続行
+        }
+        
         return [
             'error' => false,
-            'text' => $result['candidates'][0]['content']['parts'][0]['text']
+            'text' => $responseText
         ];
     }
     
